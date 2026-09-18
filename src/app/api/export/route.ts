@@ -118,6 +118,13 @@ export async function POST(request: Request) {
         company_name: "Born Again Remodeling & Roofing",
         phone: BRAND_CONFIG.verifiedPhone,
         website: "bornagainroofing.com",
+        official_logo_url: BRAND_CONFIG.officialLogoUrl,
+        brand_colors: {
+          primary_navy: "#0c0f16",
+          card_navy: "#131826",
+          accent_gold: "#f3c973",
+          deep_gold: "#b88630",
+        },
       },
       creative_goal: "Create a custom social media project showcase using real job photos.",
       preferred_styles: [

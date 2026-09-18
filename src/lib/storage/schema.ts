@@ -56,6 +56,8 @@ export interface CreativeBriefData {
     phone: string;
     website: string;
     logo_url?: string;
+    official_logo_url?: string;
+    brand_colors?: Record<string, string>;
   };
   creative_goal: string;
   preferred_styles: string[];

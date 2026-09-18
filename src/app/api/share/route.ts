@@ -46,8 +46,11 @@ export async function POST(request: Request) {
       ...campaign.factValidation.extractedClaims,
     ];
 
-    const host = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3005";
-    const logoUrl = `${host}/brand_logo.png`;
+    const hostHeader = request.headers.get("x-forwarded-host") || request.headers.get("host") || "";
+    const proto = request.headers.get("x-forwarded-proto") || (hostHeader.includes("localhost") ? "http" : "https");
+    const origin = request.headers.get("origin") || (hostHeader ? `${proto}://${hostHeader}` : "");
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || origin || "https://www.bornagainroofing.com";
+    const logoUrl = `${baseUrl}/brand_logo.png`;
 
     const creativeBrief: CreativeBriefData = {
       client: "Born Again Remodeling & Roofing",
@@ -65,6 +68,7 @@ export async function POST(request: Request) {
         phone: BRAND_CONFIG.verifiedPhone,
         website: "bornagainroofing.com",
         logo_url: logoUrl,
+        official_logo_url: BRAND_CONFIG.officialLogoUrl,
       },
       creative_goal: "Create a custom social media project showcase using real job photos.",
       preferred_styles: [

@@ -6,13 +6,15 @@ import {
   Calendar,
   User,
   ShieldCheck,
-  Download,
-  Copy,
   ExternalLink,
   Sparkles,
   Layers,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Palette,
+  Phone,
+  Globe
 } from "lucide-react";
+import SharePageClientTools from "@/components/SharePageClientTools";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +43,7 @@ export default async function SharePage({ params }: SharePageProps) {
 
   const brief = campaign.creativeBrief;
   const photos = campaign.selectedImages || [];
+  const briefJsonStr = JSON.stringify(brief || campaign, null, 2);
 
   return (
     <div style={{
@@ -67,17 +70,17 @@ export default async function SharePage({ params }: SharePageProps) {
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
             <div style={{
-              width: "50px",
-              height: "50px",
-              borderRadius: "10px",
+              width: "52px",
+              height: "52px",
+              borderRadius: "12px",
               background: "linear-gradient(135deg, #f3c973 0%, #d1a453 50%, #b88630 100%)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               color: "#0c0f16",
               fontWeight: 900,
-              fontSize: "1.5rem",
-              boxShadow: "0 0 20px rgba(243, 201, 115, 0.4)"
+              fontSize: "1.6rem",
+              boxShadow: "0 0 24px rgba(243, 201, 115, 0.4)"
             }}>
               ✝
             </div>
@@ -95,16 +98,17 @@ export default async function SharePage({ params }: SharePageProps) {
                   fontWeight: 700,
                   border: "1px solid rgba(52, 211, 153, 0.3)"
                 }}>
-                  ✓ Privacy Verified
+                  ✓ Privacy Verified (Zero Raw GPS/Addresses)
                 </span>
               </div>
               <p style={{ fontSize: "0.85rem", color: "#9ea4b0", marginTop: "0.2rem" }}>
-                Creative Handoff Brief & Real Job Photography Package
+                Creative Handoff Brief & Real Job Photography Package for ChatGPT Art Direction
               </p>
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <SharePageClientTools briefJson={briefJsonStr} photoUrls={photos} />
             <a
               href={`/api/share/${token}`}
               target="_blank"
@@ -113,7 +117,7 @@ export default async function SharePage({ params }: SharePageProps) {
                 background: "rgba(255, 255, 255, 0.05)",
                 border: "1px solid rgba(255, 255, 255, 0.15)",
                 color: "#f3c973",
-                padding: "0.55rem 1rem",
+                padding: "0.55rem 0.9rem",
                 borderRadius: "8px",
                 fontSize: "0.82rem",
                 fontWeight: 700,
@@ -124,15 +128,34 @@ export default async function SharePage({ params }: SharePageProps) {
               }}
             >
               <ExternalLink size={14} />
-              Raw JSON Endpoint
+              Raw JSON
             </a>
           </div>
         </header>
 
+        {/* Instructions Callout for ChatGPT / User */}
+        <div style={{
+          background: "rgba(243, 201, 115, 0.06)",
+          border: "1px solid rgba(243, 201, 115, 0.25)",
+          borderRadius: "12px",
+          padding: "1rem 1.25rem",
+          marginBottom: "1.75rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          fontSize: "0.85rem",
+          color: "#e2e8f0"
+        }}>
+          <Sparkles size={18} color="#f3c973" style={{ flexShrink: 0 }} />
+          <div>
+            <strong style={{ color: "#f3c973" }}>ChatGPT Creative Workflow:</strong> Provide this URL or copy the Creative Brief JSON below directly into ChatGPT with the prompt: <em>&ldquo;Create a custom 4:5 project showcase graphic for this job using the verified facts, brand colors, and approved photos.&rdquo;</em>
+          </div>
+        </div>
+
         {/* Project Facts Overview Grid */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
           gap: "1rem",
           marginBottom: "2rem"
         }}>
@@ -160,8 +183,17 @@ export default async function SharePage({ params }: SharePageProps) {
             <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f1f3f5" }}>
               {campaign.service}
             </div>
-            <div style={{ fontSize: "0.8rem", color: "#34d399", marginTop: "0.25rem" }}>
-              Target Style: {brief?.selected_style || "Project Showcase"}
+            <div style={{
+              display: "inline-block",
+              fontSize: "0.75rem",
+              color: "#34d399",
+              background: "rgba(52, 211, 153, 0.12)",
+              padding: "0.2rem 0.5rem",
+              borderRadius: "4px",
+              marginTop: "0.35rem",
+              fontWeight: 700
+            }}>
+              Style: {brief?.selected_style || "Project Showcase"}
             </div>
           </div>
 
@@ -185,22 +217,66 @@ export default async function SharePage({ params }: SharePageProps) {
             borderRadius: "12px",
             padding: "1.25rem"
           }}>
-            <div style={{ fontSize: "0.75rem", color: "#9ea4b0", marginBottom: "0.3rem" }}>VERIFIED BRAND LINE</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: 800, color: "#f3c973" }}>
+            <div style={{ fontSize: "0.75rem", color: "#9ea4b0", marginBottom: "0.3rem" }}>VERIFIED BRAND ASSETS</div>
+            <div style={{ fontSize: "1.05rem", fontWeight: 800, color: "#f3c973", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+              <Phone size={14} />
               (601) 573-6178
             </div>
-            <div style={{ fontSize: "0.8rem", color: "#9ea4b0", marginTop: "0.25rem" }}>bornagainroofing.com</div>
+            <div style={{ fontSize: "0.8rem", color: "#9ea4b0", marginTop: "0.25rem", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+              <Globe size={13} />
+              bornagainroofing.com
+            </div>
+          </div>
+        </div>
+
+        {/* Brand Tokens Card */}
+        <div style={{
+          background: "#12141c",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          borderRadius: "12px",
+          padding: "1.25rem",
+          marginBottom: "2rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "1rem"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Palette size={18} color="#f3c973" />
+            <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "#f1f3f5" }}>Brand Color Tokens & Creative Palette:</span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span style={{ width: "16px", height: "16px", borderRadius: "4px", background: "#0c0f16", border: "1px solid #333", display: "inline-block" }}></span>
+              <span style={{ fontSize: "0.78rem", color: "#9ea4b0" }}>Primary Navy (<code>#0c0f16</code>)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span style={{ width: "16px", height: "16px", borderRadius: "4px", background: "#131826", border: "1px solid #333", display: "inline-block" }}></span>
+              <span style={{ fontSize: "0.78rem", color: "#9ea4b0" }}>Card Navy (<code>#131826</code>)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span style={{ width: "16px", height: "16px", borderRadius: "4px", background: "#f3c973", display: "inline-block" }}></span>
+              <span style={{ fontSize: "0.78rem", color: "#f3c973" }}>Metallic Gold (<code>#f3c973</code>)</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              <span style={{ width: "16px", height: "16px", borderRadius: "4px", background: "#b88630", display: "inline-block" }}></span>
+              <span style={{ fontSize: "0.78rem", color: "#d1a453" }}>Deep Gold (<code>#b88630</code>)</span>
+            </div>
           </div>
         </div>
 
         {/* Approved Real Job Photos Gallery */}
         <section style={{ marginBottom: "2.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
             <h2 style={{ fontSize: "1.2rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <ImageIcon size={18} color="#f3c973" />
-              Approved Job Photography ({photos.length} High-Res Photos)
+              Approved Job Photography ({photos.length} High-Res Assets)
             </h2>
-            <span style={{ fontSize: "0.8rem", color: "#9ea4b0" }}>Real job photos — no AI mockups</span>
+            <span style={{ fontSize: "0.8rem", color: "#34d399", fontWeight: 600 }}>
+              ✓ Real verified job photos — no AI mockups
+            </span>
           </div>
 
           <div style={{
@@ -213,11 +289,12 @@ export default async function SharePage({ params }: SharePageProps) {
                 key={idx}
                 style={{
                   background: "#12141c",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
+                  border: "1px solid rgba(243, 201, 115, 0.25)",
                   borderRadius: "12px",
                   overflow: "hidden",
                   display: "flex",
-                  flexDirection: "column"
+                  flexDirection: "column",
+                  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.5)"
                 }}
               >
                 <div style={{
@@ -229,20 +306,21 @@ export default async function SharePage({ params }: SharePageProps) {
                 }}>
                   <span style={{
                     position: "absolute",
-                    bottom: "8px",
+                    top: "8px",
                     left: "8px",
-                    background: "rgba(0,0,0,0.8)",
-                    color: "#fff",
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    padding: "0.25rem 0.6rem",
+                    background: "rgba(12, 15, 22, 0.85)",
+                    border: "1px solid rgba(243, 201, 115, 0.4)",
+                    color: "#f3c973",
+                    fontSize: "0.72rem",
+                    fontWeight: 800,
+                    padding: "0.2rem 0.5rem",
                     borderRadius: "4px"
                   }}>
-                    Photo #{idx + 1}
+                    ⭐ Approved Creative Asset #{idx + 1}
                   </span>
                 </div>
                 <div style={{ padding: "0.75rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#9ea4b0" }}>High-Res Asset</span>
+                  <span style={{ fontSize: "0.75rem", color: "#9ea4b0" }}>Photo #{idx + 1}</span>
                   <a
                     href={imgUrl}
                     target="_blank"
@@ -250,7 +328,7 @@ export default async function SharePage({ params }: SharePageProps) {
                     style={{
                       color: "#38bdf8",
                       fontSize: "0.78rem",
-                      fontWeight: 600,
+                      fontWeight: 700,
                       textDecoration: "none",
                       display: "flex",
                       alignItems: "center",
@@ -269,7 +347,7 @@ export default async function SharePage({ params }: SharePageProps) {
         <section style={{ marginBottom: "2.5rem" }}>
           <div style={{
             background: "#12141c",
-            border: "1px solid rgba(243, 201, 115, 0.3)",
+            border: "1px solid rgba(243, 201, 115, 0.35)",
             borderRadius: "14px",
             overflow: "hidden"
           }}>
@@ -279,7 +357,9 @@ export default async function SharePage({ params }: SharePageProps) {
               borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
               display: "flex",
               alignItems: "center",
-              justifyContent: "space-between"
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "0.75rem"
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <Sparkles size={16} color="#f3c973" />
@@ -301,7 +381,7 @@ export default async function SharePage({ params }: SharePageProps) {
               fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
               maxHeight: "380px"
             }}>
-              {JSON.stringify(brief || campaign, null, 2)}
+              {briefJsonStr}
             </pre>
           </div>
         </section>
@@ -348,3 +428,4 @@ export default async function SharePage({ params }: SharePageProps) {
     </div>
   );
 }
+
