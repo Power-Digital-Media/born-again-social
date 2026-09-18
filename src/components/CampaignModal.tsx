@@ -35,10 +35,10 @@ interface CampaignModalProps {
 
 const CREATIVE_TYPES = [
   "Auto — let ChatGPT decide",
-  "Born Again Project Showcase",
-  "Before and After Showcase",
+  "Project Showcase",
+  "Before / After",
   "Commercial Case Study",
-  "Residential Project Spotlight",
+  "Residential Spotlight",
   "Detail / Craftsmanship",
   "Custom",
 ];
@@ -525,7 +525,7 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
                     <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#9ea4b0" }}>
-                      Photos for ChatGPT ({selectedPhotoIndexes.length}/{campaign.selectedImages.length} approved)
+                      Approved Project Photos ({selectedPhotoIndexes.length}/{campaign.selectedImages.length} selected — all included by default)
                     </label>
                     <button
                       onClick={toggleSelectAllPhotos}
