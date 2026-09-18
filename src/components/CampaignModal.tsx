@@ -24,8 +24,10 @@ import {
   CheckSquare,
   Square,
   Link as LinkIcon,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Loader2
 } from "lucide-react";
+import { downloadCreativeZip } from "@/lib/client-zip";
 
 interface CampaignModalProps {
   campaign: SocialCampaign;
@@ -48,6 +50,8 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccessPath, setExportSuccessPath] = useState<string | null>(null);
+  const [isZipping, setIsZipping] = useState(false);
+  const [zipProgress, setZipProgress] = useState<string | null>(null);
 
   // ChatGPT Share Link State
   const [shareUrl, setShareUrl] = useState<string | null>(
@@ -117,6 +121,100 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
       setSelectedPhotoIndexes([]);
     } else {
       setSelectedPhotoIndexes(campaign.selectedImages.map((_, i) => i));
+    }
+  };
+
+  const handleDownloadCreativeZip = async () => {
+    const allImages = campaign.selectedImages || [];
+    const indexesToPack = selectedPhotoIndexes.length > 0 ? selectedPhotoIndexes : allImages.map((_, i) => i);
+    const photosToPack = indexesToPack.map((i) => ({
+      url: allImages[i],
+      index: i,
+      name: `photo_${i + 1}.jpg`,
+    }));
+
+    const verifiedFacts = [
+      `${campaign.service} completed in ${campaign.city}, MS`,
+      ...campaign.factValidation.extractedClaims,
+    ];
+
+    const briefData = {
+      client: "Born Again Remodeling & Roofing",
+      project_name: projectName || `${campaign.city} ${campaign.service}`,
+      city: `${campaign.city}, MS`,
+      service: campaign.service,
+      verified_facts: verifiedFacts,
+      technician: campaign.technician,
+      approved_photos: photosToPack.map((p) => p.name),
+      privacy_review: campaign.factValidation.isValid ? "passed" : "needs_review",
+      brand: {
+        primary_style: "dark navy and gold",
+        tone: "premium, trustworthy, faith-centered, professional",
+        company_name: "Born Again Remodeling & Roofing",
+        phone: "(601) 573-6178",
+        website: "bornagainroofing.com",
+        brand_colors: {
+          primary_navy: "#0c0f16",
+          card_navy: "#131826",
+          accent_gold: "#f3c973",
+          deep_gold: "#b88630",
+        },
+      },
+      creative_goal: "Create a custom social media project showcase using real job photos.",
+      preferred_styles: [
+        "Auto — let ChatGPT decide",
+        "Project Showcase",
+        "Before / After",
+        "Commercial Case Study",
+        "Residential Spotlight",
+        "Detail / Craftsmanship",
+        "Custom",
+      ],
+      selected_style: creativeType,
+      target_formats: [
+        "4:5 Facebook/Instagram (1080x1350)",
+        "1:1 Square (1080x1080)",
+        "9:16 Story/Reel (1080x1920)",
+      ],
+      instructions: [
+        "If selected_style is 'Auto — let ChatGPT decide', analyze the approved project photography to select the optimal graphic composition:",
+        "  • If there is a strong transformation -> Before / After Showcase",
+        "  • If there is one standout hero image -> Premium Project Spotlight",
+        "  • If there are multiple useful angles -> Multi-photo Case Study",
+        "  • If there are detail shots showing fine workmanship -> Detail / Craftsmanship focus",
+        "  • If it is a commercial property -> Commercial Case Study",
+        "  • If it is general residential work -> Clean homeowner-focused promo",
+        "Use the real project photos only (no fake AI roofs).",
+        "Preserve verified brand identity: Dark Navy (#0c0f16) & Metallic Gold (#f3c973) palette, Born Again Remodeling & Roofing, (601) 573-6178, bornagainroofing.com.",
+        "Do not invent project details or customer information.",
+        "Output high-impact 4:5 social creative graphic (1080x1350).",
+      ],
+      suggested_hook: `Fresh ${campaign.service} transformation completed in ${campaign.city}, MS by ${campaign.technician}`,
+      hashtags: campaign.hashtags,
+    };
+
+    setIsZipping(true);
+    setZipProgress("Bundling creative package...");
+
+    try {
+      await downloadCreativeZip({
+        city: campaign.city,
+        service: campaign.service,
+        briefJson: JSON.stringify(briefData, null, 2),
+        photos: photosToPack,
+        copy: {
+          facebook: fbText,
+          instagram: igText,
+          gbp: gbpText,
+        },
+        onProgress: (msg) => setZipProgress(msg),
+      });
+    } catch (err: any) {
+      console.error("Zip download error:", err);
+      alert("Could not download creative ZIP: " + err.message);
+    } finally {
+      setIsZipping(false);
+      setTimeout(() => setZipProgress(null), 3000);
     }
   };
 
@@ -662,14 +760,33 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
             </span>
           </div>
 
-          <div style={{ display: "flex", gap: "0.6rem" }}>
+          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            <button
+              onClick={handleDownloadCreativeZip}
+              disabled={isZipping}
+              className="btn-gold"
+              style={{
+                fontSize: "0.8rem",
+                padding: "0.45rem 1rem",
+                background: "linear-gradient(135deg, #f3c973 0%, #d1a453 50%, #b88630 100%)",
+                color: "#0c0f16",
+                fontWeight: 800,
+                border: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem"
+              }}
+            >
+              {isZipping ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+              {isZipping ? (zipProgress || "Creating ZIP...") : "⬇ Download Creative Set (.ZIP)"}
+            </button>
             <button
               onClick={handleCreateShareLink}
-              className="btn-gold"
-              style={{ fontSize: "0.8rem", padding: "0.45rem 1rem" }}
+              className="btn-outline"
+              style={{ fontSize: "0.8rem", padding: "0.45rem 1rem", color: "#f3c973", borderColor: "rgba(243, 201, 115, 0.4)" }}
             >
               <LinkIcon size={14} />
-              {copiedKey === "share_link" ? "✓ Link Copied!" : "🔗 Share with ChatGPT"}
+              {copiedKey === "share_link" ? "✓ Link Copied!" : "🔗 Share Link"}
             </button>
             <button
               onClick={() => onSaveStatus(campaign.id, "approved")}

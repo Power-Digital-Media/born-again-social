@@ -15,6 +15,7 @@ import {
   Globe
 } from "lucide-react";
 import SharePageClientTools from "@/components/SharePageClientTools";
+import SharePhotoGallery from "@/components/SharePhotoGallery";
 
 export const dynamic = "force-dynamic";
 
@@ -267,81 +268,18 @@ export default async function SharePage({ params }: SharePageProps) {
           </div>
         </div>
 
-        {/* Approved Real Job Photos Gallery */}
-        <section style={{ marginBottom: "2.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
-            <h2 style={{ fontSize: "1.2rem", fontWeight: 800, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <ImageIcon size={18} color="#f3c973" />
-              Approved Job Photography ({photos.length} High-Res Assets)
-            </h2>
-            <span style={{ fontSize: "0.8rem", color: "#34d399", fontWeight: 600 }}>
-              ✓ Real verified job photos — no AI mockups
-            </span>
-          </div>
-
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "1rem"
-          }}>
-            {photos.map((imgUrl, idx) => (
-              <div
-                key={idx}
-                style={{
-                  background: "#12141c",
-                  border: "1px solid rgba(243, 201, 115, 0.25)",
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                  display: "flex",
-                  flexDirection: "column",
-                  boxShadow: "0 10px 25px -5px rgba(0,0,0,0.5)"
-                }}
-              >
-                <div style={{
-                  height: "220px",
-                  backgroundImage: `url(${imgUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  position: "relative"
-                }}>
-                  <span style={{
-                    position: "absolute",
-                    top: "8px",
-                    left: "8px",
-                    background: "rgba(12, 15, 22, 0.85)",
-                    border: "1px solid rgba(243, 201, 115, 0.4)",
-                    color: "#f3c973",
-                    fontSize: "0.72rem",
-                    fontWeight: 800,
-                    padding: "0.2rem 0.5rem",
-                    borderRadius: "4px"
-                  }}>
-                    ⭐ Approved Creative Asset #{idx + 1}
-                  </span>
-                </div>
-                <div style={{ padding: "0.75rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#9ea4b0" }}>Photo #{idx + 1}</span>
-                  <a
-                    href={imgUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      color: "#38bdf8",
-                      fontSize: "0.78rem",
-                      fontWeight: 700,
-                      textDecoration: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "0.3rem"
-                    }}
-                  >
-                    Open Original <ExternalLink size={12} />
-                  </a>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Interactive Approved Real Job Photos Gallery & ZIP Bundler */}
+        <SharePhotoGallery
+          photos={photos}
+          city={campaign.city}
+          service={campaign.service}
+          briefJson={briefJsonStr}
+          copy={{
+            facebook: campaign.facebookCopy,
+            instagram: campaign.instagramCopy,
+            gbp: campaign.gbpCopy,
+          }}
+        />
 
         {/* ChatGPT Creative Brief JSON Box */}
         <section style={{ marginBottom: "2.5rem" }}>
