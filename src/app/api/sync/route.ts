@@ -1,84 +1,130 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { RawPin } from "@/lib/storage/schema";
 import { clusterAndSanitizePins } from "@/lib/clustering";
 import { storage } from "@/lib/storage";
+import bundledPins from "@/data/pins.json";
 
 export const dynamic = "force-dynamic";
 
-async function fetchWithTimeout(url: string, timeoutMs = 7000): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "BornAgainSocialEngine/1.0",
-        "Accept": "application/json",
+function parseFirestoreDocument(doc: any): RawPin {
+  const actualDoc = doc.document ? doc.document : doc;
+  const fields = actualDoc.fields || {};
+
+  const parseValue = (val: any): any => {
+    if (!val) return undefined;
+    if ("stringValue" in val) return val.stringValue;
+    if ("doubleValue" in val) return Number(val.doubleValue);
+    if ("integerValue" in val) return Number(val.integerValue);
+    if ("booleanValue" in val) return val.booleanValue;
+    if ("arrayValue" in val) {
+      const values = val.arrayValue.values || [];
+      return values.map((v: any) => parseValue(v));
+    }
+    if ("mapValue" in val) {
+      const mapFields = val.mapValue.fields || {};
+      const obj: any = {};
+      for (const [k, v] of Object.entries(mapFields)) {
+        obj[k] = parseValue(v);
+      }
+      return obj;
+    }
+    return undefined;
+  };
+
+  return {
+    id: parseValue(fields.id) || (actualDoc.name ? actualDoc.name.split("/").pop() : "") || Date.now().toString(),
+    author: parseValue(fields.author) || "Our Certified Crew",
+    date: parseValue(fields.date) || new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    location: parseValue(fields.location) || "Central Mississippi, MS",
+    service: parseValue(fields.service) || "Roofing & Remodeling",
+    description: parseValue(fields.description) || "",
+    images: parseValue(fields.images) || [],
+    latitude: parseValue(fields.latitude),
+    longitude: parseValue(fields.longitude),
+    detailedExplanation: parseValue(fields.detailedExplanation) || "",
+    aeoAnswers: parseValue(fields.aeoAnswers) || [],
+    clientId: parseValue(fields.clientId) || "born-again-roofing",
+  };
+}
+
+async function fetchLiveFirestorePins(): Promise<RawPin[]> {
+  const firebaseProjectId = process.env.FIREBASE_PROJECT_ID || "pdm-pindrop-central";
+  const clientId = process.env.PDM_CLIENT_ID || "born-again-roofing";
+
+  const queryBody = {
+    structuredQuery: {
+      from: [{ collectionId: "pins" }],
+      where: {
+        fieldFilter: {
+          field: { fieldPath: "clientId" },
+          op: "EQUAL",
+          value: { stringValue: clientId },
+        },
       },
-      next: { revalidate: 0 },
-    });
-    return res;
+    },
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+  try {
+    const res = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${firebaseProjectId}/databases/(default)/documents:runQuery`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(queryBody),
+        signal: controller.signal,
+        next: { revalidate: 30 },
+      }
+    );
+
+    if (res.ok) {
+      const results = await res.json();
+      return results
+        .filter((r: any) => r.document)
+        .map((r: any) => parseFirestoreDocument(r));
+    }
+  } catch (err) {
+    console.warn("Firestore query timed out or failed:", err);
   } finally {
     clearTimeout(timeoutId);
   }
-}
 
-async function loadFallbackPins(): Promise<RawPin[]> {
-  const fallbackPath = "E:\\AntiGravity\\born-again-roofing\\src\\data\\pins.json";
-  try {
-    if (fs.existsSync(fallbackPath)) {
-      const content = fs.readFileSync(fallbackPath, "utf-8");
-      return JSON.parse(content) as RawPin[];
-    }
-  } catch (err) {
-    console.warn("Could not load local pins.json fallback:", err);
-  }
   return [];
 }
 
 export async function GET() {
   try {
-    let rawPins: RawPin[] = [];
-    let source = "live_api";
+    // 1. Fetch live daily pins directly from Firebase Firestore REST API
+    const liveDbPins = await fetchLiveFirestorePins();
 
-    // 1. Try resilient live fetch from bornagainroofing.com
-    try {
-      const res = await fetchWithTimeout("https://www.bornagainroofing.com/api/pins", 8000);
-      if (res.ok) {
-        rawPins = await res.json();
-      } else {
-        console.warn(`Live API returned status ${res.status}. Using fallback archive.`);
-      }
-    } catch (err) {
-      console.warn("Live API fetch timed out or failed. Switching to resilient local archive:", err);
-    }
+    // 2. Merge live Firestore pins with the bundled historical archive
+    const mergedRawPins: RawPin[] = [...liveDbPins, ...(bundledPins as RawPin[])];
 
-    // 2. Resilient fallback if live fetch didn't yield pins
-    if (!rawPins || rawPins.length === 0) {
-      source = "local_archive";
-      rawPins = await loadFallbackPins();
-    }
+    // Deduplicate pins by ID
+    const seen = new Set<string>();
+    const uniqueRawPins = mergedRawPins.filter((p) => {
+      if (!p || !p.id) return false;
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
 
-    if (rawPins.length === 0) {
-      return NextResponse.json({ error: "No pin data available from live API or local cache" }, { status: 500 });
-    }
-
-    // 3. Get rotation context from storage
+    // 3. Get rotation history
     const recentCities = await storage.getRecentPostedCities(3);
     const recentServices = await storage.getRecentPostedServices(3);
 
     // 4. Run Clustering, Privacy Sanitization, and Opportunity Scoring (COS)
-    const sanitizedJobs = clusterAndSanitizePins(rawPins, recentCities, recentServices);
+    const sanitizedJobs = clusterAndSanitizePins(uniqueRawPins, recentCities, recentServices);
 
-    // 5. Persist sanitized jobs to storage
+    // 5. Persist to storage
     await storage.saveJobs(sanitizedJobs);
 
     return NextResponse.json({
       success: true,
-      source,
-      totalRawPins: rawPins.length,
+      livePinsFound: liveDbPins.length,
+      totalRawPins: uniqueRawPins.length,
       totalClusteredJobs: sanitizedJobs.length,
       highOpportunityJobsCount: sanitizedJobs.filter((j) => j.opportunityScore >= 70).length,
       jobs: sanitizedJobs,
