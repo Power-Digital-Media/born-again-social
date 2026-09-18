@@ -45,6 +45,7 @@ export interface CreativeBriefData {
   project_name?: string;
   city: string;
   service: string;
+  job_description?: string;
   verified_facts: string[];
   technician: string;
   approved_photos: string[];
@@ -76,6 +77,7 @@ export interface SocialCampaign {
   service: string;
   jobDate: string;
   technician: string;
+  description?: string;
   status: "discovered" | "scored" | "generated" | "approved" | "scheduled" | "published" | "archived";
   opportunityScore: number;
   

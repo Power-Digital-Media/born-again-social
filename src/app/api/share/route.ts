@@ -57,6 +57,7 @@ export async function POST(request: Request) {
       project_name: projectName || `${campaign.city} ${campaign.service}`,
       city: `${campaign.city}, MS`,
       service: campaign.service,
+      job_description: campaign.description,
       verified_facts: verifiedFacts,
       technician: campaign.technician,
       approved_photos: approvedPhotoUrls,

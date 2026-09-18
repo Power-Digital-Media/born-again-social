@@ -59,6 +59,19 @@ export async function POST(request: Request) {
     fs.writeFileSync(path.join(chatgptCreativeDir, "instagram_post.txt"), campaign.instagramCopy, "utf-8");
     fs.writeFileSync(path.join(chatgptCreativeDir, "google_business_profile.txt"), campaign.gbpCopy, "utf-8");
 
+    // 1.5 Write Job Description Text File to all relevant directories
+    const descContent = campaign.description || `Completed custom ${campaign.service} project in ${campaign.city}, MS.`;
+    const jobDescText = `PROJECT: ${campaign.city}, MS — ${campaign.service}\n` +
+      `DATE: ${campaign.jobDate || dateStr}\n` +
+      `TECHNICIAN: ${campaign.technician || "Born Again Remodeling & Roofing Team"}\n` +
+      `LOCATION: ${campaign.city}, Mississippi\n\n` +
+      `FIELD CHECK-IN NOTES / FULL JOB DESCRIPTION:\n` +
+      `${descContent}\n`;
+
+    fs.writeFileSync(path.join(socialCopyDir, "job_description.txt"), jobDescText, "utf-8");
+    fs.writeFileSync(path.join(chatgptCreativeDir, "job_description.txt"), jobDescText, "utf-8");
+    fs.writeFileSync(path.join(targetFolder, "job_description.txt"), jobDescText, "utf-8");
+
     // 2. Filter & Download Selected Photos
     const allImages = campaign.selectedImages || [];
     const indexesToDownload =
@@ -108,6 +121,7 @@ export async function POST(request: Request) {
       project_name: projectName || `${campaign.city} ${campaign.service}`,
       city: `${campaign.city}, MS`,
       service: campaign.service,
+      job_description: campaign.description,
       verified_facts: verifiedFacts,
       technician: campaign.technician,
       approved_photos: approvedPhotoNames,

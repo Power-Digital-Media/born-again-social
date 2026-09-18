@@ -5,6 +5,8 @@ export interface ZipCreativePackageOptions {
   city: string;
   service: string;
   jobDate?: string;
+  technician?: string;
+  jobDescription?: string;
   briefJson: string;
   photos: { url: string; index: number; name?: string }[];
   copy?: {
@@ -37,6 +39,8 @@ export async function downloadCreativeZip({
   city,
   service,
   jobDate,
+  technician,
+  jobDescription,
   briefJson,
   photos,
   copy,
@@ -67,7 +71,17 @@ export async function downloadCreativeZip({
     zip.file("google_business_profile.txt", copy.gbp);
   }
 
-  // 4. Brand Logo
+  // 4. Job Description & Field Check-In Notes Text File
+  const descContent = jobDescription || `Completed custom ${service} project in ${city}, MS.`;
+  const formattedJobDesc = `PROJECT: ${city}, MS — ${service}\n` +
+    `DATE: ${jobDate || "Recent"}\n` +
+    `TECHNICIAN: ${technician || "Born Again Remodeling & Roofing Team"}\n` +
+    `LOCATION: ${city}, Mississippi\n\n` +
+    `FIELD CHECK-IN NOTES / FULL JOB DESCRIPTION:\n` +
+    `${descContent}\n`;
+  zip.file("job_description.txt", formattedJobDesc);
+
+  // 5. Brand Logo
   try {
     onProgress?.("Fetching brand logo...");
     const logoRes = await fetch("/brand_logo.png");

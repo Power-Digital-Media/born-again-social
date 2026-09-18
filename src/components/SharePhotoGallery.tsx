@@ -18,6 +18,8 @@ interface SharePhotoGalleryProps {
   city: string;
   service: string;
   jobDate?: string;
+  technician?: string;
+  jobDescription?: string;
   briefJson: string;
   copy?: {
     facebook?: string;
@@ -31,6 +33,8 @@ export default function SharePhotoGallery({
   city,
   service,
   jobDate,
+  technician,
+  jobDescription,
   briefJson,
   copy
 }: SharePhotoGalleryProps) {
@@ -72,6 +76,8 @@ export default function SharePhotoGallery({
         city,
         service,
         jobDate,
+        technician,
+        jobDescription,
         briefJson,
         photos: photosToPack,
         copy,

@@ -268,12 +268,32 @@ export default async function SharePage({ params }: SharePageProps) {
           </div>
         </div>
 
+        {/* Field Check-In Notes / Scope of Work */}
+        {campaign.description && (
+          <div style={{
+            background: "#12141c",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
+            borderRadius: "12px",
+            padding: "1.25rem 1.5rem",
+            marginBottom: "2rem"
+          }}>
+            <div style={{ fontSize: "0.75rem", color: "#f3c973", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+              📋 Field Check-In Notes & Scope of Work
+            </div>
+            <p style={{ fontSize: "0.92rem", lineHeight: "1.6", color: "#d1d5db", whiteSpace: "pre-wrap", margin: 0 }}>
+              {campaign.description}
+            </p>
+          </div>
+        )}
+
         {/* Interactive Approved Real Job Photos Gallery & ZIP Bundler */}
         <SharePhotoGallery
           photos={photos}
           city={campaign.city}
           service={campaign.service}
           jobDate={campaign.jobDate}
+          technician={campaign.technician}
+          jobDescription={campaign.description}
           briefJson={briefJsonStr}
           copy={{
             facebook: campaign.facebookCopy,

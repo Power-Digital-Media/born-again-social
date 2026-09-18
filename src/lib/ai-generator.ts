@@ -122,6 +122,7 @@ export async function buildCampaignPackage(job: SanitizedSocialJob): Promise<Soc
     service: job.service,
     jobDate: job.date,
     technician: job.authorName,
+    description: desc,
     status: "generated",
     opportunityScore: job.opportunityScore,
     facebookCopy,

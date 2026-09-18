@@ -143,6 +143,7 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
       project_name: projectName || `${campaign.city} ${campaign.service}`,
       city: `${campaign.city}, MS`,
       service: campaign.service,
+      job_description: campaign.description,
       verified_facts: verifiedFacts,
       technician: campaign.technician,
       approved_photos: photosToPack.map((p) => p.name),
@@ -201,6 +202,8 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
         city: campaign.city,
         service: campaign.service,
         jobDate: campaign.jobDate,
+        technician: campaign.technician,
+        jobDescription: campaign.description,
         briefJson: JSON.stringify(briefData, null, 2),
         photos: photosToPack,
         copy: {
