@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import { SanitizedSocialJob } from "@/lib/storage/schema";
-import { Sparkles, MapPin, Wrench, User, Image as ImageIcon, CheckCircle, Flame, Filter } from "lucide-react";
+import { Sparkles, MapPin, Wrench, User, Image as ImageIcon, CheckCircle, Flame, Filter, Eye } from "lucide-react";
+import { JobPhotoViewerModal } from "./JobPhotoViewerModal";
 
 interface OpportunityFeedProps {
   jobs: SanitizedSocialJob[];
@@ -14,6 +15,7 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
   const [filterType, setFilterType] = useState<"all" | "high_score" | "multi_photo" | "roofing" | "remodeling">("all");
   const [selectedCity, setSelectedCity] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [viewingJobPhotos, setViewingJobPhotos] = useState<{ job: SanitizedSocialJob; index: number } | null>(null);
 
   // Extract unique cities
   const cities = Array.from(new Set(jobs.map((j) => j.city))).filter(Boolean);
@@ -248,44 +250,88 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
 
                 {/* Photos Thumbnail Strip */}
                 {job.cleanImages && job.cleanImages.length > 0 && (
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: `repeat(${Math.min(job.cleanImages.length, 3)}, 1fr)`,
-                    gap: "0.4rem",
-                    marginBottom: "0.85rem",
-                    borderRadius: "8px",
-                    overflow: "hidden"
-                  }}>
-                    {job.cleanImages.slice(0, 3).map((imgUrl, idx) => (
-                      <div
-                        key={idx}
+                  <div style={{ marginBottom: "0.85rem" }}>
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: "0.3rem"
+                    }}>
+                      <span style={{ fontSize: "0.72rem", color: "#9ea4b0", fontWeight: 600 }}>
+                        Job Photos ({job.cleanImages.length})
+                      </span>
+                      <button
+                        onClick={() => setViewingJobPhotos({ job, index: 0 })}
                         style={{
-                          height: "90px",
-                          position: "relative",
-                          background: "#1e293b",
-                          backgroundImage: `url(${imgUrl})`,
-                          backgroundSize: "cover",
-                          backgroundPosition: "center",
-                          borderRadius: "4px"
+                          background: "rgba(243, 201, 115, 0.1)",
+                          border: "1px solid rgba(243, 201, 115, 0.25)",
+                          color: "#f3c973",
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          padding: "0.15rem 0.45rem",
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.25rem"
                         }}
                       >
-                        {idx === 2 && job.cleanImages.length > 3 && (
-                          <div style={{
-                            position: "absolute",
-                            inset: 0,
-                            background: "rgba(0,0,0,0.65)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            color: "#fff",
-                            fontWeight: 700,
-                            fontSize: "0.85rem"
-                          }}>
-                            +{job.cleanImages.length - 3} more
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                        <Eye size={11} />
+                        View All {job.cleanImages.length} Photos
+                      </button>
+                    </div>
+
+                    <div style={{
+                      display: "grid",
+                      gridTemplateColumns: `repeat(${Math.min(job.cleanImages.length, 3)}, 1fr)`,
+                      gap: "0.4rem",
+                      borderRadius: "8px",
+                      overflow: "hidden"
+                    }}>
+                      {job.cleanImages.slice(0, 3).map((imgUrl, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setViewingJobPhotos({ job, index: idx })}
+                          title="Click to view all photos in full size"
+                          style={{
+                            height: "90px",
+                            position: "relative",
+                            background: "#1e293b",
+                            backgroundImage: `url(${imgUrl})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            transition: "transform 0.15s ease, opacity 0.15s ease",
+                            border: "1px solid rgba(255, 255, 255, 0.08)"
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = "0.85";
+                            e.currentTarget.style.transform = "scale(1.02)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = "1";
+                            e.currentTarget.style.transform = "scale(1)";
+                          }}
+                        >
+                          {idx === 2 && job.cleanImages.length > 3 && (
+                            <div style={{
+                              position: "absolute",
+                              inset: 0,
+                              background: "rgba(0,0,0,0.65)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#fff",
+                              fontWeight: 700,
+                              fontSize: "0.85rem"
+                            }}>
+                              +{job.cleanImages.length - 3} more
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -331,6 +377,20 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
             );
           })}
         </div>
+      )}
+
+      {/* Full Photo Lightbox Inspector Modal */}
+      {viewingJobPhotos && (
+        <JobPhotoViewerModal
+          job={viewingJobPhotos.job}
+          initialIndex={viewingJobPhotos.index}
+          onClose={() => setViewingJobPhotos(null)}
+          onBuildCampaign={(job) => {
+            setViewingJobPhotos(null);
+            onBuildCampaign(job);
+          }}
+          isGenerating={isGeneratingId === viewingJobPhotos.job.projectClusterId}
+        />
       )}
     </div>
   );
