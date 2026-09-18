@@ -273,6 +273,7 @@ export default async function SharePage({ params }: SharePageProps) {
           photos={photos}
           city={campaign.city}
           service={campaign.service}
+          jobDate={campaign.jobDate}
           briefJson={briefJsonStr}
           copy={{
             facebook: campaign.facebookCopy,

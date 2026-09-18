@@ -200,6 +200,7 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
       await downloadCreativeZip({
         city: campaign.city,
         service: campaign.service,
+        jobDate: campaign.jobDate,
         briefJson: JSON.stringify(briefData, null, 2),
         photos: photosToPack,
         copy: {

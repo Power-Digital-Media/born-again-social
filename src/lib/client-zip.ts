@@ -4,6 +4,7 @@ export interface ZipCreativePackageOptions {
   projectName?: string;
   city: string;
   service: string;
+  jobDate?: string;
   briefJson: string;
   photos: { url: string; index: number; name?: string }[];
   copy?: {
@@ -16,10 +17,26 @@ export interface ZipCreativePackageOptions {
   onProgress?: (progressText: string) => void;
 }
 
+function formatFileDate(rawDate?: string): string {
+  if (!rawDate) {
+    return new Date().toISOString().split("T")[0];
+  }
+  // If it's already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+    return rawDate;
+  }
+  const parsed = new Date(rawDate);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split("T")[0];
+  }
+  return rawDate.replace(/[^a-zA-Z0-9]/g, "_");
+}
+
 export async function downloadCreativeZip({
   projectName,
   city,
   service,
+  jobDate,
   briefJson,
   photos,
   copy,
@@ -90,10 +107,11 @@ export async function downloadCreativeZip({
   onProgress?.("Generating ZIP bundle...");
   const content = await zip.generateAsync({ type: "blob" });
 
-  // Trigger browser download
+  // Trigger browser download with clean date prefix
+  const dateStr = formatFileDate(jobDate);
   const safeCity = city.replace(/[^a-zA-Z0-9]/g, "_");
   const safeService = service.replace(/[^a-zA-Z0-9]/g, "_");
-  const defaultFilename = `ChatGPT_Creative_Set_${safeCity}_${safeService}.zip`;
+  const defaultFilename = `${dateStr}_${safeCity}_${safeService}_ChatGPT_Creative_Set.zip`;
   const finalFilename = zipFilename || defaultFilename;
 
   const link = document.createElement("a");
