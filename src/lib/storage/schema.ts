@@ -20,7 +20,7 @@ export interface SanitizedSocialJob {
   state: string;
   service: string;
   date: string;
-  authorName: string; // e.g. "Christopher" or "Chris S."
+  authorName: string;
   description: string;
   cleanImages: string[];
   photoCount: number;
@@ -38,6 +38,32 @@ export interface SanitizedSocialJob {
   };
   privacyFlags: string[];
   clusteredPinCount: number;
+}
+
+export interface CreativeBriefData {
+  client: string;
+  project_name?: string;
+  city: string;
+  service: string;
+  verified_facts: string[];
+  technician: string;
+  approved_photos: string[];
+  privacy_review: string;
+  brand: {
+    primary_style: string;
+    tone: string;
+    company_name: string;
+    phone: string;
+    website: string;
+    logo_url?: string;
+  };
+  creative_goal: string;
+  preferred_styles: string[];
+  selected_style: string;
+  target_formats: string[];
+  instructions: string[];
+  suggested_hook: string;
+  hashtags: string[];
 }
 
 export interface SocialCampaign {
@@ -59,7 +85,7 @@ export interface SocialCampaign {
   // Visual Package & Creative
   selectedImages: string[];
   recommendedLayout: "before_after" | "multi_carousel" | "single_hero" | "detail_showcase";
-  creativeAssetUrl?: string; // 4:5 or B/A rendered image data
+  creativeAssetUrl?: string;
   
   // Taxonomy Hashtags & Safe Links
   hashtags: string[];
@@ -74,6 +100,11 @@ export interface SocialCampaign {
     confidence: number;
   };
   
+  // Secret Share Link Token for ChatGPT
+  shareToken?: string;
+  shareExpiresAt?: string;
+  creativeBrief?: CreativeBriefData;
+
   // Timestamps & Meta
   createdAt: string;
   updatedAt: string;

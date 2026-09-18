@@ -23,6 +23,7 @@ import {
   Package,
   CheckSquare,
   Square,
+  Link as LinkIcon,
   Image as ImageIcon
 } from "lucide-react";
 
@@ -48,6 +49,12 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccessPath, setExportSuccessPath] = useState<string | null>(null);
 
+  // ChatGPT Share Link State
+  const [shareUrl, setShareUrl] = useState<string | null>(
+    campaign.shareToken ? `${window.location.origin}/share/${campaign.shareToken}` : null
+  );
+  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+
   // Creative Brief Controls
   const [projectName, setProjectName] = useState(
     campaign.city && campaign.service ? `${campaign.city} ${campaign.service}` : ""
@@ -65,7 +72,38 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    setTimeout(() => setCopiedKey(null), 2500);
+  };
+
+  const handleCreateShareLink = async () => {
+    setIsGeneratingShare(true);
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          campaignId: campaign.id,
+          projectName,
+          creativeType,
+          selectedPhotoIndexes,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.token) {
+        const fullUrl = `${window.location.origin}/share/${data.token}`;
+        setShareUrl(fullUrl);
+        navigator.clipboard.writeText(fullUrl);
+        setCopiedKey("share_link");
+        setTimeout(() => setCopiedKey(null), 3000);
+      } else {
+        alert("Failed to create share link: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      alert("Share link error: " + err.message);
+    } finally {
+      setIsGeneratingShare(false);
+    }
   };
 
   const togglePhotoIndex = (index: number) => {
@@ -107,7 +145,6 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
       if (res.ok && data.folderPath) {
         setExportSuccessPath(data.folderPath);
         if (autoOpen) {
-          // Open the chatgpt_creative subdirectory directly
           handleOpenFolder(data.chatgptCreativeDir || data.folderPath);
         }
       } else {
@@ -151,7 +188,7 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
         border: "1px solid rgba(243, 201, 115, 0.35)",
         borderRadius: "16px",
         width: "100%",
-        maxWidth: "1100px",
+        maxWidth: "1120px",
         maxHeight: "94vh",
         display: "flex",
         flexDirection: "column",
@@ -184,28 +221,29 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            {/* 📦 Export for ChatGPT Creative */}
+            {/* 🔗 Create ChatGPT Share Link */}
+            <button
+              onClick={handleCreateShareLink}
+              disabled={isGeneratingShare}
+              className="btn-gold"
+              style={{ fontSize: "0.82rem", padding: "0.5rem 1rem" }}
+              title="Generates an unguessable private share link for ChatGPT"
+            >
+              <LinkIcon size={14} />
+              {isGeneratingShare ? "Generating Link..." : copiedKey === "share_link" ? "✓ Link Copied!" : "🔗 Share with ChatGPT"}
+            </button>
+
+            {/* 📦 Export for ChatGPT Folder */}
             <button
               onClick={() => handleExportForChatGPT(true)}
               disabled={isExporting}
-              className="btn-gold"
-              style={{ fontSize: "0.82rem", padding: "0.5rem 1rem" }}
-              title="Exports creative brief, logo, post texts, and approved high-res photos for ChatGPT"
+              className="btn-outline"
+              style={{ fontSize: "0.82rem", padding: "0.45rem 0.85rem" }}
+              title="Exports creative brief and media kit directly to a local folder"
             >
-              <Package size={15} className={isExporting ? "animate-spin" : ""} />
-              {isExporting ? "Bundling for ChatGPT..." : "📦 Export for ChatGPT Creative"}
+              <Package size={14} className={isExporting ? "animate-spin" : ""} />
+              {isExporting ? "Exporting..." : "📦 Export Folder"}
             </button>
-
-            {exportSuccessPath && (
-              <button
-                onClick={() => handleOpenFolder(exportSuccessPath + "\\chatgpt_creative")}
-                className="btn-outline"
-                style={{ fontSize: "0.82rem", padding: "0.45rem 0.8rem", color: "#34d399" }}
-              >
-                <FolderOpen size={14} />
-                Open Creative Folder
-              </button>
-            )}
 
             <button
               onClick={onClose}
@@ -223,10 +261,10 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
           </div>
         </div>
 
-        {/* Fact Validator Alert Strip */}
+        {/* Fact Validator Alert Strip & Share Link Banner */}
         <div style={{
           padding: "0.6rem 1.5rem",
-          background: campaign.factValidation.isValid ? "rgba(52, 211, 153, 0.08)" : "rgba(251, 191, 36, 0.08)",
+          background: shareUrl ? "rgba(56, 189, 248, 0.08)" : campaign.factValidation.isValid ? "rgba(52, 211, 153, 0.08)" : "rgba(251, 191, 36, 0.08)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
           display: "flex",
           alignItems: "center",
@@ -235,20 +273,62 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
           gap: "0.5rem",
           fontSize: "0.78rem"
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-            {campaign.factValidation.isValid ? (
-              <CheckCircle size={15} color="#34d399" />
-            ) : (
-              <AlertTriangle size={15} color="#fbbf24" />
-            )}
-            <span style={{ fontWeight: 600, color: "#f1f3f5" }}>
-              Fact Verifier: {campaign.factValidation.isValid ? "100% Fact-Grounded & Policy Compliant" : "Review Claim Warnings"}
-            </span>
-          </div>
-
-          {campaign.factValidation.unsupportedClaims.length > 0 && (
-            <div style={{ color: "#fbbf24", fontSize: "0.74rem" }}>
-              {campaign.factValidation.unsupportedClaims.join(" | ")}
+          {shareUrl ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", width: "100%", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", color: "#38bdf8" }}>
+                <LinkIcon size={14} />
+                <span>ChatGPT Share Link Active:</span>
+                <code style={{ background: "rgba(0,0,0,0.5)", padding: "0.15rem 0.4rem", borderRadius: "4px", color: "#f3c973" }}>
+                  {shareUrl}
+                </code>
+              </div>
+              <div style={{ display: "flex", gap: "0.4rem" }}>
+                <button
+                  onClick={() => handleCopy(shareUrl, "share_link")}
+                  style={{
+                    background: "rgba(243, 201, 115, 0.15)",
+                    border: "1px solid rgba(243, 201, 115, 0.3)",
+                    color: "#f3c973",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: "4px",
+                    fontSize: "0.72rem",
+                    cursor: "pointer",
+                    fontWeight: 700
+                  }}
+                >
+                  {copiedKey === "share_link" ? "Copied!" : "Copy URL"}
+                </button>
+                <a
+                  href={shareUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    background: "rgba(255, 255, 255, 0.08)",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    color: "#f1f3f5",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: "4px",
+                    fontSize: "0.72rem",
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.2rem"
+                  }}
+                >
+                  Open <ExternalLink size={11} />
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+              {campaign.factValidation.isValid ? (
+                <CheckCircle size={15} color="#34d399" />
+              ) : (
+                <AlertTriangle size={15} color="#fbbf24" />
+              )}
+              <span style={{ fontWeight: 600, color: "#f1f3f5" }}>
+                Fact Verifier: {campaign.factValidation.isValid ? "100% Fact-Grounded & Policy Compliant" : "Review Claim Warnings"}
+              </span>
             </div>
           )}
         </div>
@@ -584,12 +664,12 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
 
           <div style={{ display: "flex", gap: "0.6rem" }}>
             <button
-              onClick={() => handleExportForChatGPT(true)}
+              onClick={handleCreateShareLink}
               className="btn-gold"
               style={{ fontSize: "0.8rem", padding: "0.45rem 1rem" }}
             >
-              <Package size={14} />
-              📦 Export for ChatGPT Creative
+              <LinkIcon size={14} />
+              {copiedKey === "share_link" ? "✓ Link Copied!" : "🔗 Share with ChatGPT"}
             </button>
             <button
               onClick={() => onSaveStatus(campaign.id, "approved")}

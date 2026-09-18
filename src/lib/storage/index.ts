@@ -10,6 +10,7 @@ export interface IStorageAdapter {
   saveCampaign(campaign: SocialCampaign): Promise<SocialCampaign>;
   getCampaigns(): Promise<SocialCampaign[]>;
   getCampaignById(id: string): Promise<SocialCampaign | null>;
+  getCampaignByShareToken(token: string): Promise<SocialCampaign | null>;
   updateCampaignStatus(id: string, status: SocialCampaign["status"]): Promise<boolean>;
   getRecentPostedCities(daysLimit?: number): Promise<string[]>;
   getRecentPostedServices(daysLimit?: number): Promise<string[]>;
@@ -93,6 +94,12 @@ class JsonFileStorageAdapter implements IStorageAdapter {
   async getCampaignById(id: string): Promise<SocialCampaign | null> {
     const campaigns = await this.getCampaigns();
     return campaigns.find((c) => c.id === id) || null;
+  }
+
+  async getCampaignByShareToken(token: string): Promise<SocialCampaign | null> {
+    if (!token) return null;
+    const campaigns = await this.getCampaigns();
+    return campaigns.find((c) => c.shareToken === token) || null;
   }
 
   async updateCampaignStatus(id: string, status: SocialCampaign["status"]): Promise<boolean> {
