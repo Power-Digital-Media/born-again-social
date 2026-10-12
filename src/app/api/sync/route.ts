@@ -16,6 +16,10 @@ function parseFirestoreDocument(doc: any): RawPin {
     if ("doubleValue" in val) return Number(val.doubleValue);
     if ("integerValue" in val) return Number(val.integerValue);
     if ("booleanValue" in val) return val.booleanValue;
+    if ("timestampValue" in val) {
+      const d = new Date(val.timestampValue);
+      return isNaN(d.getTime()) ? val.timestampValue : d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    }
     if ("arrayValue" in val) {
       const values = val.arrayValue.values || [];
       return values.map((v: any) => parseValue(v));

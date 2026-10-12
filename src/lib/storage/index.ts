@@ -5,7 +5,7 @@ import { SanitizedSocialJob, SocialCampaign } from "./schema";
 
 export interface IStorageAdapter {
   init(): Promise<void>;
-  saveJobs(jobs: SanitizedSocialJob[]): Promise<void>;
+  saveJobs(jobs: SanitizedSocialJob[], overwrite?: boolean): Promise<void>;
   getJobs(): Promise<SanitizedSocialJob[]>;
   getJobByClusterId(clusterId: string): Promise<SanitizedSocialJob | null>;
   saveCampaign(campaign: SocialCampaign): Promise<SocialCampaign>;
@@ -52,10 +52,14 @@ class ServerlessResilientStorageAdapter implements IStorageAdapter {
     }
   }
 
-  async saveJobs(jobs: SanitizedSocialJob[]): Promise<void> {
+  async saveJobs(jobs: SanitizedSocialJob[], overwrite = true): Promise<void> {
     memoryJobs = jobs;
     try {
       await this.init();
+      if (overwrite) {
+        fs.writeFileSync(this.jobsPath, JSON.stringify(jobs, null, 2), "utf-8");
+        return;
+      }
       const existing = await this.getJobs();
       const map = new Map<string, SanitizedSocialJob>();
       for (const j of existing) {

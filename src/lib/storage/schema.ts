@@ -22,6 +22,7 @@ export interface SanitizedSocialJob {
   date: string;
   authorName: string;
   description: string;
+  detailedExplanation?: string;
   cleanImages: string[];
   photoCount: number;
   socialSafeUrl: string;
@@ -78,6 +79,7 @@ export interface SocialCampaign {
   jobDate: string;
   technician: string;
   description?: string;
+  detailedExplanation?: string;
   status: "discovered" | "scored" | "generated" | "approved" | "scheduled" | "published" | "archived";
   opportunityScore: number;
   

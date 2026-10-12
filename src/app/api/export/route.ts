@@ -45,32 +45,106 @@ export async function POST(request: Request) {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     });
 
-    // 1. Write Text Post Files to social_copy/
+    // 1. Write Text Post Files to social_copy/ and chatgpt_creative/ (with Actual Work Description included)
+    const descContent = campaign.description || `Completed custom ${campaign.service} project in ${campaign.city}, MS.`;
+    const detailedContent = campaign.detailedExplanation ? `\n\nDETAILED CRAFTSMANSHIP NOTES:\n${campaign.detailedExplanation}` : "";
+
+    const formatPostFile = (platformName: string, postCopy: string) => {
+      return `================================================================================\n` +
+        `PROJECT: ${campaign.service} in ${campaign.city}, MS (${campaign.jobDate || dateStr})\n` +
+        `TECHNICIAN: ${campaign.technician || "Born Again Team"}\n` +
+        `================================================================================\n` +
+        `ACTUAL WORK DONE & FIELD CHECK-IN NOTES:\n` +
+        `--------------------------------------------------------------------------------\n` +
+        `${descContent}${detailedContent}\n\n` +
+        `================================================================================\n` +
+        `READY-TO-USE ${platformName.toUpperCase()} POST COPY:\n` +
+        `================================================================================\n` +
+        `${postCopy}\n`;
+    };
+
+    const fbContent = formatPostFile("Facebook", campaign.facebookCopy);
+    const igContent = formatPostFile("Instagram", campaign.instagramCopy);
+    const gbpContent = formatPostFile("Google Business Profile", campaign.gbpCopy);
+
     const fbFilePath = path.join(socialCopyDir, "facebook_post.txt");
     const igFilePath = path.join(socialCopyDir, "instagram_post.txt");
     const gbpFilePath = path.join(socialCopyDir, "google_business_profile.txt");
 
-    fs.writeFileSync(fbFilePath, campaign.facebookCopy, "utf-8");
-    fs.writeFileSync(igFilePath, campaign.instagramCopy, "utf-8");
-    fs.writeFileSync(gbpFilePath, campaign.gbpCopy, "utf-8");
+    fs.writeFileSync(fbFilePath, fbContent, "utf-8");
+    fs.writeFileSync(igFilePath, igContent, "utf-8");
+    fs.writeFileSync(gbpFilePath, gbpContent, "utf-8");
 
     // Also mirror text posts inside chatgpt_creative/ for convenience
-    fs.writeFileSync(path.join(chatgptCreativeDir, "facebook_post.txt"), campaign.facebookCopy, "utf-8");
-    fs.writeFileSync(path.join(chatgptCreativeDir, "instagram_post.txt"), campaign.instagramCopy, "utf-8");
-    fs.writeFileSync(path.join(chatgptCreativeDir, "google_business_profile.txt"), campaign.gbpCopy, "utf-8");
+    fs.writeFileSync(path.join(chatgptCreativeDir, "facebook_post.txt"), fbContent, "utf-8");
+    fs.writeFileSync(path.join(chatgptCreativeDir, "instagram_post.txt"), igContent, "utf-8");
+    fs.writeFileSync(path.join(chatgptCreativeDir, "google_business_profile.txt"), gbpContent, "utf-8");
 
-    // 1.5 Write Job Description Text File to all relevant directories
-    const descContent = campaign.description || `Completed custom ${campaign.service} project in ${campaign.city}, MS.`;
-    const jobDescText = `PROJECT: ${campaign.city}, MS — ${campaign.service}\n` +
-      `DATE: ${campaign.jobDate || dateStr}\n` +
-      `TECHNICIAN: ${campaign.technician || "Born Again Remodeling & Roofing Team"}\n` +
-      `LOCATION: ${campaign.city}, Mississippi\n\n` +
-      `FIELD CHECK-IN NOTES / FULL JOB DESCRIPTION:\n` +
-      `${descContent}\n`;
+    // 1.5 Write Comprehensive Work Description Text Files to all relevant directories
+    const verifiedFactsList = [
+      `${campaign.service} completed in ${campaign.city}, MS`,
+      ...(campaign.factValidation?.extractedClaims || []),
+    ];
 
-    fs.writeFileSync(path.join(socialCopyDir, "job_description.txt"), jobDescText, "utf-8");
-    fs.writeFileSync(path.join(chatgptCreativeDir, "job_description.txt"), jobDescText, "utf-8");
-    fs.writeFileSync(path.join(targetFolder, "job_description.txt"), jobDescText, "utf-8");
+    const workDescText = `================================================================================\n` +
+      `BORN AGAIN REMODELING & ROOFING — WORK DESCRIPTION & FIELD NOTES\n` +
+      `================================================================================\n` +
+      `PROJECT:        ${campaign.service} in ${campaign.city}, MS\n` +
+      `LOCATION:       ${campaign.city}, Mississippi (Central MS)\n` +
+      `DATE:           ${campaign.jobDate || dateStr}\n` +
+      `TECHNICIAN:     ${campaign.technician || "Born Again Remodeling & Roofing Team"}\n` +
+      `PHONE:          (601) 573-6178\n` +
+      `WEBSITE:        https://www.bornagainroofing.com\n\n` +
+      `--------------------------------------------------------------------------------\n` +
+      `SCOPE OF WORK DONE & FIELD CHECK-IN NOTES:\n` +
+      `--------------------------------------------------------------------------------\n` +
+      `${descContent}\n` +
+      `${detailedContent}\n` +
+      `--------------------------------------------------------------------------------\n` +
+      `VERIFIED PROJECT FACTS:\n` +
+      `--------------------------------------------------------------------------------\n` +
+      `${verifiedFactsList.map((f) => `• ${f}`).join("\n")}\n\n` +
+      `--------------------------------------------------------------------------------\n` +
+      `HOW TO CREATE SOCIAL POSTS AROUND THIS WORK:\n` +
+      `--------------------------------------------------------------------------------\n` +
+      `1. FOCUS ON ACTUAL WORK DONE: Highlight the exact repair, replacement, or remodeling tasks completed above.\n` +
+      `2. LOCAL RELEVANCE: Emphasize ${campaign.city}, MS to boost local SEO and neighbor trust.\n` +
+      `3. REAL PHOTOS: Pair this copy with the real project photos located in the 'original_media/' folder.\n` +
+      `4. CALL TO ACTION: Remind clients to call (601) 573-6178 for free estimates or visit bornagainroofing.com.\n` +
+      `================================================================================\n`;
+
+    // Prompt specifically designed for ChatGPT / Claude to write posts around the work done
+    const createPostPromptText = `PROMPT TO GENERATE SOCIAL POSTS AROUND THIS WORK:\n\n` +
+      `"You are an expert social media manager for Born Again Remodeling & Roofing, a premier, faith-centered contracting company in Central Mississippi.\n\n` +
+      `Here is the work description for a recently completed job:\n\n` +
+      `Location: ${campaign.city}, MS\n` +
+      `Service: ${campaign.service}\n` +
+      `Technician: ${campaign.technician || "Born Again Team"}\n` +
+      `Date: ${campaign.jobDate || dateStr}\n` +
+      `Work Completed: ${descContent}\n` +
+      `${campaign.detailedExplanation ? `Additional Notes: ${campaign.detailedExplanation}\n` : ""}\n` +
+      `Company Phone: (601) 573-6178\n` +
+      `Website: bornagainroofing.com\n\n` +
+      `Please create 3 custom social media posts centered around the specific work that was done:\n` +
+      `1. Facebook Post: Engaging storytelling focusing on the craftsmanship, problem solved, and customer peace of mind.\n` +
+      `2. Instagram Caption: Punchy, visual-focused caption with bulleted project highlights and hashtags for Mississippi home improvement.\n` +
+      `3. Google Business Profile Post: High-SEO local update (under 1500 chars, no phone number in text per Google policy) detailing the service and area served."\n`;
+
+    // Write to root folder
+    fs.writeFileSync(path.join(targetFolder, "work_description.txt"), workDescText, "utf-8");
+    fs.writeFileSync(path.join(targetFolder, "WORK_DESCRIPTION.txt"), workDescText, "utf-8");
+    fs.writeFileSync(path.join(targetFolder, "job_description.txt"), workDescText, "utf-8");
+    fs.writeFileSync(path.join(targetFolder, "CREATE_POST_PROMPT.txt"), createPostPromptText, "utf-8");
+
+    // Write to social_copy/
+    fs.writeFileSync(path.join(socialCopyDir, "work_description.txt"), workDescText, "utf-8");
+    fs.writeFileSync(path.join(socialCopyDir, "job_description.txt"), workDescText, "utf-8");
+    fs.writeFileSync(path.join(socialCopyDir, "CREATE_POST_PROMPT.txt"), createPostPromptText, "utf-8");
+
+    // Write to chatgpt_creative/
+    fs.writeFileSync(path.join(chatgptCreativeDir, "work_description.txt"), workDescText, "utf-8");
+    fs.writeFileSync(path.join(chatgptCreativeDir, "job_description.txt"), workDescText, "utf-8");
+    fs.writeFileSync(path.join(chatgptCreativeDir, "CREATE_POST_PROMPT.txt"), createPostPromptText, "utf-8");
 
     // 2. Filter & Download Selected Photos
     const allImages = campaign.selectedImages || [];

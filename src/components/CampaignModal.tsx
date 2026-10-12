@@ -46,7 +46,7 @@ const CREATIVE_TYPES = [
 ];
 
 export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModalProps) {
-  const [activePlatform, setActivePlatform] = useState<"facebook" | "instagram" | "gbp" | "creative" | "chatgpt_ai">("facebook");
+  const [activePlatform, setActivePlatform] = useState<"facebook" | "instagram" | "gbp" | "work_desc" | "creative" | "chatgpt_ai">("facebook");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [exportSuccessPath, setExportSuccessPath] = useState<string | null>(null);
@@ -466,6 +466,13 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
             📍 Google Business Profile
           </button>
           <button
+            onClick={() => setActivePlatform("work_desc")}
+            className={activePlatform === "work_desc" ? "btn-gold" : "btn-outline"}
+            style={{ padding: "0.35rem 0.8rem", fontSize: "0.8rem", color: activePlatform === "work_desc" ? "#0c0f16" : "#34d399", borderColor: activePlatform === "work_desc" ? "transparent" : "rgba(52, 211, 153, 0.4)" }}
+          >
+            📋 Work Description & Prompt
+          </button>
+          <button
             onClick={() => setActivePlatform("creative")}
             className={activePlatform === "creative" ? "btn-gold" : "btn-outline"}
             style={{ padding: "0.35rem 0.8rem", fontSize: "0.8rem" }}
@@ -509,51 +516,175 @@ export function CampaignModal({ campaign, onClose, onSaveStatus }: CampaignModal
             />
           ) : (
             <>
-              {/* Left Column: Editable Copy */}
+              {/* Left Column: Editable Copy or Work Description */}
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
-                  <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#f3c973" }}>
-                    {activePlatform === "facebook" ? "Facebook Post Copy" : activePlatform === "instagram" ? "Instagram Caption & Hashtags" : "Google Business Profile Post"}
-                  </label>
-                  <button
-                    onClick={() => handleCopy(currentCopy, activePlatform)}
-                    className="btn-outline"
-                    style={{ padding: "0.25rem 0.65rem", fontSize: "0.75rem", color: "#f3c973" }}
-                  >
-                    {copiedKey === activePlatform ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
-                    {copiedKey === activePlatform ? "Copied!" : "Copy Text"}
-                  </button>
-                </div>
+                {activePlatform === "work_desc" ? (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem", flexWrap: "wrap", gap: "0.4rem" }}>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#34d399", display: "flex", alignItems: "center", gap: "0.3rem" }}>
+                        📋 Field Check-In Notes & Scope of Work
+                      </label>
+                      <div style={{ display: "flex", gap: "0.4rem" }}>
+                        <button
+                          onClick={() => handleCopy(
+                            `PROJECT: ${campaign.service} in ${campaign.city}, MS\nDATE: ${campaign.jobDate}\nTECHNICIAN: ${campaign.technician}\n\nWORK DONE:\n${campaign.description || "Custom project completed."}${campaign.detailedExplanation ? `\n\nDETAILED CRAFTSMANSHIP:\n${campaign.detailedExplanation}` : ""}`,
+                            "work_desc_only"
+                          )}
+                          className="btn-outline"
+                          style={{ padding: "0.25rem 0.65rem", fontSize: "0.75rem", color: "#34d399", borderColor: "rgba(52, 211, 153, 0.3)" }}
+                        >
+                          {copiedKey === "work_desc_only" ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                          {copiedKey === "work_desc_only" ? "Copied Work Notes!" : "Copy Work Notes"}
+                        </button>
+                        <button
+                          onClick={() => handleCopy(
+                            `PROMPT TO CREATE SOCIAL MEDIA POSTS:\n\nCreate engaging social media posts for Born Again Remodeling & Roofing about this recently completed project:\n• Location: ${campaign.city}, MS\n• Service: ${campaign.service}\n• Technician: ${campaign.technician}\n• Date: ${campaign.jobDate}\n• Work Completed: ${campaign.description || "Custom project"}\n${campaign.detailedExplanation ? `• Details: ${campaign.detailedExplanation}\n` : ""}• Phone: (601) 573-6178\n• Website: bornagainroofing.com\n\nPlease write:\n1. A storytelling Facebook post highlighting the craftsmanship and local community\n2. A punchy Instagram caption with project bullets and relevant Mississippi hashtags\n3. An SEO-rich Google Business Profile update (no phone number in text).`,
+                            "work_prompt"
+                          )}
+                          className="btn-gold"
+                          style={{ padding: "0.25rem 0.65rem", fontSize: "0.75rem" }}
+                        >
+                          {copiedKey === "work_prompt" ? <Check size={13} color="#0c0f16" /> : <Sparkles size={13} />}
+                          {copiedKey === "work_prompt" ? "Copied AI Prompt!" : "Copy AI Post Prompt"}
+                        </button>
+                      </div>
+                    </div>
 
-                <textarea
-                  value={
-                    activePlatform === "facebook" ? fbText : activePlatform === "instagram" ? igText : gbpText
-                  }
-                  onChange={(e) => {
-                    if (activePlatform === "facebook") setFbText(e.target.value);
-                    else if (activePlatform === "instagram") setIgText(e.target.value);
-                    else setGbpText(e.target.value);
-                  }}
-                  style={{
-                    width: "100%",
-                    height: "300px",
-                    background: "#0b0c10",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    borderRadius: "8px",
-                    color: "#f1f3f5",
-                    padding: "0.9rem",
-                    fontSize: "0.86rem",
-                    lineHeight: "1.5",
-                    fontFamily: "inherit",
-                    resize: "none",
-                    outline: "none"
-                  }}
-                />
+                    <div style={{
+                      background: "#0b0c10",
+                      border: "1px solid rgba(52, 211, 153, 0.25)",
+                      borderRadius: "8px",
+                      padding: "1rem",
+                      color: "#f1f3f5",
+                      fontSize: "0.85rem",
+                      lineHeight: "1.6",
+                      maxHeight: "330px",
+                      overflowY: "auto"
+                    }}>
+                      <div style={{ marginBottom: "0.75rem", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", fontSize: "0.78rem", color: "#9ea4b0" }}>
+                        <span style={{ color: "#f3c973", fontWeight: 700 }}>Project:</span> {campaign.service} • <span style={{ color: "#f3c973", fontWeight: 700 }}>City:</span> {campaign.city}, MS • <span style={{ color: "#f3c973", fontWeight: 700 }}>Technician:</span> {campaign.technician} • <span style={{ color: "#f3c973", fontWeight: 700 }}>Date:</span> {campaign.jobDate}
+                      </div>
 
-                {activePlatform === "gbp" && (
-                  <p style={{ fontSize: "0.72rem", color: "#9ea4b0", marginTop: "0.35rem" }}>
-                    ✓ Google Business Profile Policy: Text contains zero phone numbers. Customers click the native "Call Now" or "Learn More" button.
-                  </p>
+                      <div style={{ fontWeight: 700, color: "#34d399", marginBottom: "0.3rem", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        Field Check-in Notes:
+                      </div>
+                      <p style={{ margin: "0 0 1rem 0", color: "#e2e8f0" }}>
+                        {campaign.description || `Completed custom ${campaign.service} project in ${campaign.city}, MS.`}
+                      </p>
+
+                      {campaign.detailedExplanation && (
+                        <>
+                          <div style={{ fontWeight: 700, color: "#38bdf8", marginBottom: "0.3rem", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                            Detailed Craftsmanship Notes:
+                          </div>
+                          <p style={{ margin: "0 0 1rem 0", color: "#cbd5e1" }}>
+                            {campaign.detailedExplanation}
+                          </p>
+                        </>
+                      )}
+
+                      <div style={{
+                        background: "rgba(243, 201, 115, 0.06)",
+                        border: "1px solid rgba(243, 201, 115, 0.2)",
+                        borderRadius: "6px",
+                        padding: "0.6rem 0.8rem",
+                        marginTop: "0.75rem",
+                        fontSize: "0.76rem",
+                        color: "#9ea4b0"
+                      }}>
+                        💡 <strong style={{ color: "#f3c973" }}>Folder Export Note:</strong> When you click <strong>"📦 Export Folder"</strong> or <strong>"⬇ Download Creative Set (.ZIP)"</strong>, a clean <code style={{ color: "#34d399" }}>work_description.txt</code> and <code style={{ color: "#38bdf8" }}>CREATE_POST_PROMPT.txt</code> are automatically saved directly into your project folder so you can quickly build posts around this exact work.
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Actual Job Description Reference Banner directly above the 3 post editors */}
+                    <div style={{
+                      background: "rgba(243, 201, 115, 0.08)",
+                      border: "1px solid rgba(243, 201, 115, 0.25)",
+                      borderRadius: "8px",
+                      padding: "0.65rem 0.85rem",
+                      marginBottom: "0.75rem",
+                      fontSize: "0.8rem",
+                      lineHeight: "1.45"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.3rem", flexWrap: "wrap", gap: "0.3rem" }}>
+                        <span style={{ fontWeight: 700, color: "#f3c973", display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem" }}>
+                          📋 Actual Work Done ({campaign.city}, MS — {campaign.service}):
+                        </span>
+                        <div style={{ display: "flex", gap: "0.3rem" }}>
+                          <button
+                            onClick={() => handleCopy(campaign.description || `Completed ${campaign.service} in ${campaign.city}, MS`, "quick_job_desc")}
+                            style={{
+                              background: "rgba(243, 201, 115, 0.15)",
+                              border: "1px solid rgba(243, 201, 115, 0.3)",
+                              color: "#f3c973",
+                              fontSize: "0.68rem",
+                              padding: "0.15rem 0.45rem",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontWeight: 700
+                            }}
+                          >
+                            {copiedKey === "quick_job_desc" ? "✓ Copied Notes" : "Copy Job Notes"}
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ color: "#e2e8f0", fontSize: "0.78rem" }}>
+                        {campaign.description || `Completed custom ${campaign.service} in ${campaign.city}, MS.`}
+                      </div>
+                      {campaign.detailedExplanation && (
+                        <div style={{ color: "#94a3b8", fontSize: "0.74rem", marginTop: "0.25rem", borderTop: "1px dashed rgba(255,255,255,0.08)", paddingTop: "0.25rem" }}>
+                          <strong style={{ color: "#38bdf8" }}>Craftsmanship Detail:</strong> {campaign.detailedExplanation}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+                      <label style={{ fontSize: "0.82rem", fontWeight: 700, color: "#f3c973" }}>
+                        {activePlatform === "facebook" ? "Facebook Post Copy" : activePlatform === "instagram" ? "Instagram Caption & Hashtags" : "Google Business Profile Post"}
+                      </label>
+                      <button
+                        onClick={() => handleCopy(currentCopy, activePlatform)}
+                        className="btn-outline"
+                        style={{ padding: "0.25rem 0.65rem", fontSize: "0.75rem", color: "#f3c973" }}
+                      >
+                        {copiedKey === activePlatform ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                        {copiedKey === activePlatform ? "Copied!" : "Copy Text"}
+                      </button>
+                    </div>
+
+                    <textarea
+                      value={
+                        activePlatform === "facebook" ? fbText : activePlatform === "instagram" ? igText : gbpText
+                      }
+                      onChange={(e) => {
+                        if (activePlatform === "facebook") setFbText(e.target.value);
+                        else if (activePlatform === "instagram") setIgText(e.target.value);
+                        else setGbpText(e.target.value);
+                      }}
+                      style={{
+                        width: "100%",
+                        height: "240px",
+                        background: "#0b0c10",
+                        border: "1px solid rgba(255, 255, 255, 0.1)",
+                        borderRadius: "8px",
+                        color: "#f1f3f5",
+                        padding: "0.9rem",
+                        fontSize: "0.86rem",
+                        lineHeight: "1.5",
+                        fontFamily: "inherit",
+                        resize: "none",
+                        outline: "none"
+                      }}
+                    />
+
+                    {activePlatform === "gbp" && (
+                      <p style={{ fontSize: "0.72rem", color: "#9ea4b0", marginTop: "0.35rem" }}>
+                        ✓ Google Business Profile Policy: Text contains zero phone numbers. Customers click the native "Call Now" or "Learn More" button.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 

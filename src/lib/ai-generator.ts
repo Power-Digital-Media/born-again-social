@@ -24,7 +24,8 @@ export async function buildCampaignPackage(job: SanitizedSocialJob): Promise<Soc
   const defaultDesc = isRemodeling
     ? `Completed custom ${serviceTitle.toLowerCase()} renovation in ${city}, MS with premium craftsmanship.`
     : `Completed professional ${serviceTitle.toLowerCase()} project in ${city}, MS with durable weather protection.`;
-  const desc = job.description || defaultDesc;
+  const baseDesc = job.description || defaultDesc;
+  const desc = job.detailedExplanation ? `${baseDesc} ${job.detailedExplanation}` : baseDesc;
 
   const scriptureBlock = pillar.scripture
     ? `\n\n“${pillar.scripture.text}” — ${pillar.scripture.verse}`
@@ -123,6 +124,7 @@ export async function buildCampaignPackage(job: SanitizedSocialJob): Promise<Soc
     jobDate: job.date,
     technician: job.authorName,
     description: desc,
+    detailedExplanation: job.detailedExplanation,
     status: "generated",
     opportunityScore: job.opportunityScore,
     facebookCopy,

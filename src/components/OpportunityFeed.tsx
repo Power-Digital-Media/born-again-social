@@ -204,20 +204,6 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
                       <Flame size={14} />
                       COS {job.opportunityScore}
                     </div>
-
-                    {job.clusteredPinCount > 1 && (
-                      <span style={{
-                        fontSize: "0.72rem",
-                        background: "rgba(56, 189, 248, 0.12)",
-                        color: "#38bdf8",
-                        padding: "0.2rem 0.45rem",
-                        borderRadius: "4px",
-                        border: "1px solid rgba(56, 189, 248, 0.25)",
-                        fontWeight: 600
-                      }}>
-                        ⚡ {job.clusteredPinCount} Pins Clustered
-                      </span>
-                    )}
                   </div>
 
                   <span style={{ fontSize: "0.75rem", color: "#9ea4b0" }}>

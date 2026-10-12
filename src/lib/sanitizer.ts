@@ -96,3 +96,15 @@ export function detectPrivacyRisks(description: string, photoUrls: string[]): st
 
   return flags;
 }
+
+export function normalizeImageUrl(imgUrl: string): string {
+  if (!imgUrl) return "";
+  const trimmed = imgUrl.trim();
+  if (trimmed.startsWith("/images/")) {
+    return `https://www.bornagainroofing.com${trimmed}`;
+  }
+  if (trimmed.startsWith("images/")) {
+    return `https://www.bornagainroofing.com/${trimmed}`;
+  }
+  return trimmed;
+}
