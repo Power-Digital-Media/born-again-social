@@ -64,13 +64,14 @@ export function clusterAndSanitizePins(rawPins: RawPin[], recentCities: string[]
     };
   });
 
-  // Sort newest pins first (exact timestamp ID or parsed date descending), then by highest COS score
+  // Sort newest pins first (calendar date descending, then pin ID descending, then COS score)
   return socialJobs.sort((a, b) => {
-    const numA = Number(a.sourcePinId) || 0;
-    const numB = Number(b.sourcePinId) || 0;
-    const timeA = numA > 1_000_000_000_000 ? numA : (Date.parse(a.date) || 0) + (numA % 1_000_000);
-    const timeB = numB > 1_000_000_000_000 ? numB : (Date.parse(b.date) || 0) + (numB % 1_000_000);
-    if (timeB !== timeA) return timeB - timeA;
+    const dateA = Date.parse(a.date) || 0;
+    const dateB = Date.parse(b.date) || 0;
+    if (dateB !== dateA) return dateB - dateA;
+    const idA = Number(a.sourcePinId) || 0;
+    const idB = Number(b.sourcePinId) || 0;
+    if (idB !== idA) return idB - idA;
     return b.opportunityScore - a.opportunityScore;
   });
 }

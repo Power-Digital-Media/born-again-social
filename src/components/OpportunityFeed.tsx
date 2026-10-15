@@ -14,17 +14,61 @@ interface OpportunityFeedProps {
 export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: OpportunityFeedProps) {
   const [filterType, setFilterType] = useState<"all" | "high_score" | "multi_photo" | "roofing" | "remodeling">("all");
   const [selectedCity, setSelectedCity] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"newest" | "cos_score">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "cos_score">("newest");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewingJobPhotos, setViewingJobPhotos] = useState<{ job: SanitizedSocialJob; index: number } | null>(null);
 
   // Extract unique cities
   const cities = Array.from(new Set(jobs.map((j) => j.city))).filter(Boolean);
 
-  const getJobSortTimestamp = (job: SanitizedSocialJob): number => {
-    const numId = Number(job.sourcePinId) || 0;
-    if (numId > 1_000_000_000_000) return numId;
-    return (Date.parse(job.date) || 0) + (numId % 1_000_000);
+  const isRoofingJob = (job: SanitizedSocialJob): boolean => {
+    const s = job.service.toLowerCase();
+    const d = job.description.toLowerCase();
+    return (
+      s.includes("roof") ||
+      s.includes("shingle") ||
+      s.includes("tarp") ||
+      d.includes("roof") ||
+      d.includes("shingle")
+    );
+  };
+
+  const isRemodelingJob = (job: SanitizedSocialJob): boolean => {
+    const text = `${job.service} ${job.description}`.toLowerCase();
+    return (
+      text.includes("remodel") ||
+      text.includes("kitchen") ||
+      text.includes("bath") ||
+      text.includes("paint") ||
+      text.includes("stain") ||
+      text.includes("siding") ||
+      text.includes("sheetrock") ||
+      text.includes("drywall") ||
+      text.includes("floor") ||
+      text.includes("tile") ||
+      text.includes("cabinet") ||
+      text.includes("deck") ||
+      text.includes("fenc") ||
+      text.includes("framing") ||
+      text.includes("trim") ||
+      text.includes("plumbing") ||
+      text.includes("construction") ||
+      text.includes("door") ||
+      text.includes("window") ||
+      text.includes("concrete") ||
+      text.includes("porch") ||
+      text.includes("shed") ||
+      text.includes("landscap")
+    );
+  };
+
+  const compareJobsByDate = (a: SanitizedSocialJob, b: SanitizedSocialJob): number => {
+    const dateA = Date.parse(a.date) || 0;
+    const dateB = Date.parse(b.date) || 0;
+    if (dateA !== dateB) return dateA - dateB;
+    const idA = Number(a.sourcePinId) || 0;
+    const idB = Number(b.sourcePinId) || 0;
+    return idA - idB;
   };
 
   const filteredJobs = jobs
@@ -32,8 +76,8 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
       // Filter Type
       if (filterType === "high_score" && job.opportunityScore < 70) return false;
       if (filterType === "multi_photo" && job.photoCount < 2) return false;
-      if (filterType === "roofing" && !job.service.toLowerCase().includes("roof")) return false;
-      if (filterType === "remodeling" && !job.service.toLowerCase().includes("remodel") && !job.service.toLowerCase().includes("kitchen") && !job.service.toLowerCase().includes("bath")) return false;
+      if (filterType === "roofing" && !isRoofingJob(job)) return false;
+      if (filterType === "remodeling" && !isRemodelingJob(job)) return false;
 
       // City
       if (selectedCity !== "all" && job.city !== selectedCity) return false;
@@ -52,15 +96,19 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
       return true;
     })
     .sort((a, b) => {
-      const timeA = getJobSortTimestamp(a);
-      const timeB = getJobSortTimestamp(b);
       if (sortBy === "newest") {
-        if (timeB !== timeA) return timeB - timeA;
+        const cmp = compareJobsByDate(b, a);
+        if (cmp !== 0) return cmp;
         return b.opportunityScore - a.opportunityScore;
-      } else {
-        if (b.opportunityScore !== a.opportunityScore) return b.opportunityScore - a.opportunityScore;
-        return timeB - timeA;
       }
+      if (sortBy === "oldest") {
+        const cmp = compareJobsByDate(a, b);
+        if (cmp !== 0) return cmp;
+        return b.opportunityScore - a.opportunityScore;
+      }
+      // sortBy === "cos_score"
+      if (b.opportunityScore !== a.opportunityScore) return b.opportunityScore - a.opportunityScore;
+      return compareJobsByDate(b, a);
     });
 
   return (
@@ -73,113 +121,159 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
         padding: "1rem 1.25rem",
         marginBottom: "1.5rem",
         display: "flex",
-        flexWrap: "wrap",
-        gap: "1rem",
-        alignItems: "center",
-        justifyContent: "space-between",
+        flexDirection: "column",
+        gap: "0.9rem",
         boxShadow: "0 10px 30px -10px rgba(0, 0, 0, 0.5)"
       }}>
-        {/* Search */}
-        <div style={{ flex: "1 1 260px" }}>
-          <input
-            type="text"
-            placeholder="Search city, materials (GAF, HDZ), service..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: "100%",
-              background: "#0b0c10",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              color: "#f1f3f5",
-              padding: "0.6rem 0.95rem",
-              borderRadius: "8px",
-              fontSize: "0.88rem",
-              outline: "none"
-            }}
-          />
+        {/* Top Row: Search, Persistent Date Sort Pills, and City Filter */}
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0.85rem",
+          alignItems: "center",
+          justifyContent: "space-between"
+        }}>
+          {/* Search */}
+          <div style={{ flex: "1 1 260px" }}>
+            <input
+              type="text"
+              placeholder="Search city, materials (GAF, HDZ), service..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: "100%",
+                background: "#0b0c10",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                color: "#f1f3f5",
+                padding: "0.6rem 0.95rem",
+                borderRadius: "8px",
+                fontSize: "0.88rem",
+                outline: "none"
+              }}
+            />
+          </div>
+
+          {/* Persistent Order Toggle (Stays active across all category & city filters) */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.35rem",
+            background: "#0b0c10",
+            padding: "0.3rem",
+            borderRadius: "10px",
+            border: "1px solid rgba(243, 201, 115, 0.22)"
+          }}>
+            <span style={{
+              fontSize: "0.73rem",
+              fontWeight: 700,
+              color: "#9ea4b0",
+              padding: "0 0.45rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.04em"
+            }}>
+              Order:
+            </span>
+            <button
+              onClick={() => setSortBy("newest")}
+              className={sortBy === "newest" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}
+            >
+              🕒 Newest First
+            </button>
+            <button
+              onClick={() => setSortBy("oldest")}
+              className={sortBy === "oldest" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}
+            >
+              ⏳ Oldest First
+            </button>
+            <button
+              onClick={() => setSortBy("cos_score")}
+              className={sortBy === "cos_score" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.4rem 0.75rem", fontSize: "0.78rem" }}
+            >
+              🔥 Highest COS
+            </button>
+          </div>
+
+          {/* City Filter */}
+          <div>
+            <select
+              value={selectedCity}
+              onChange={(e) => setSelectedCity(e.target.value)}
+              style={{
+                background: "#0b0c10",
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                color: "#f1f3f5",
+                padding: "0.6rem 0.95rem",
+                borderRadius: "8px",
+                fontSize: "0.85rem",
+                outline: "none",
+                cursor: "pointer"
+              }}
+            >
+              <option value="all">📍 All Cities ({cities.length})</option>
+              {cities.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
-        {/* Filter Pills */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem", alignItems: "center" }}>
-          <button
-            onClick={() => setFilterType("all")}
-            className={filterType === "all" ? "btn-gold" : "btn-outline"}
-            style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
-          >
-            All Opportunities ({jobs.length})
-          </button>
-          <button
-            onClick={() => setFilterType("high_score")}
-            className={filterType === "high_score" ? "btn-gold" : "btn-outline"}
-            style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
-          >
-            🔥 High COS Score (70+)
-          </button>
-          <button
-            onClick={() => setFilterType("multi_photo")}
-            className={filterType === "multi_photo" ? "btn-gold" : "btn-outline"}
-            style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
-          >
-            📸 Multi-Photo (2+)
-          </button>
-          <button
-            onClick={() => setFilterType("roofing")}
-            className={filterType === "roofing" ? "btn-gold" : "btn-outline"}
-            style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
-          >
-            🏠 Roofing
-          </button>
-          <button
-            onClick={() => setFilterType("remodeling")}
-            className={filterType === "remodeling" ? "btn-gold" : "btn-outline"}
-            style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
-          >
-            🔨 Remodeling
-          </button>
-        </div>
+        {/* Bottom Row: Category Filter Pills & Active Match Count */}
+        <div style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: "0.45rem",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+          paddingTop: "0.75rem"
+        }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem", alignItems: "center" }}>
+            <button
+              onClick={() => setFilterType("all")}
+              className={filterType === "all" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
+            >
+              All Opportunities ({jobs.length})
+            </button>
+            <button
+              onClick={() => setFilterType("high_score")}
+              className={filterType === "high_score" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
+            >
+              🔥 High COS Score (70+)
+            </button>
+            <button
+              onClick={() => setFilterType("multi_photo")}
+              className={filterType === "multi_photo" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
+            >
+              📸 Multi-Photo (2+)
+            </button>
+            <button
+              onClick={() => setFilterType("roofing")}
+              className={filterType === "roofing" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
+            >
+              🏠 Roofing
+            </button>
+            <button
+              onClick={() => setFilterType("remodeling")}
+              className={filterType === "remodeling" ? "btn-gold" : "btn-outline"}
+              style={{ padding: "0.45rem 0.85rem", fontSize: "0.8rem" }}
+            >
+              🔨 Remodeling
+            </button>
+          </div>
 
-        {/* Sort & City Filters */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as "newest" | "cos_score")}
-            style={{
-              background: "#0b0c10",
-              border: "1px solid rgba(243, 201, 115, 0.28)",
-              color: "#f3c973",
-              fontWeight: 600,
-              padding: "0.6rem 0.95rem",
-              borderRadius: "8px",
-              fontSize: "0.85rem",
-              outline: "none",
-              cursor: "pointer"
-            }}
-          >
-            <option value="newest">🕒 Sort: Newest Pins First</option>
-            <option value="cos_score">🔥 Sort: Highest COS Score</option>
-          </select>
-
-          <select
-            value={selectedCity}
-            onChange={(e) => setSelectedCity(e.target.value)}
-            style={{
-              background: "#0b0c10",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              color: "#f1f3f5",
-              padding: "0.6rem 0.95rem",
-              borderRadius: "8px",
-              fontSize: "0.85rem",
-              outline: "none",
-              cursor: "pointer"
-            }}
-          >
-            <option value="all">📍 All Cities ({cities.length})</option>
-            {cities.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
+          <span style={{ fontSize: "0.78rem", color: "#9ea4b0", fontWeight: 600 }}>
+            Showing <strong style={{ color: "#f3c973" }}>{filteredJobs.length}</strong> jobs •{" "}
+            {sortBy === "newest" ? "Newest First" : sortBy === "oldest" ? "Oldest First" : "Highest COS Score"}
+          </span>
         </div>
       </div>
 
