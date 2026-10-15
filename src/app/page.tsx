@@ -18,15 +18,15 @@ export default function StudioDashboard() {
   const loadData = async () => {
     setIsSyncing(true);
     try {
-      // 1. Sync Jobs
-      const syncRes = await fetch("/api/sync");
+      // 1. Sync Jobs (bypass browser & CDN cache)
+      const syncRes = await fetch(`/api/sync?t=${Date.now()}`, { cache: "no-store" });
       if (syncRes.ok) {
         const syncData = await syncRes.json();
         setJobs(syncData.jobs || []);
       }
 
       // 2. Fetch Campaigns
-      const campRes = await fetch("/api/campaign");
+      const campRes = await fetch(`/api/campaign?t=${Date.now()}`, { cache: "no-store" });
       if (campRes.ok) {
         const campData = await campRes.json();
         setCampaigns(campData.campaigns || []);

@@ -69,7 +69,7 @@ async function fetchLiveFirestorePins(): Promise<RawPin[]> {
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000);
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
 
   try {
     const res = await fetch(
@@ -79,20 +79,38 @@ async function fetchLiveFirestorePins(): Promise<RawPin[]> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(queryBody),
         signal: controller.signal,
-        next: { revalidate: 30 },
+        cache: "no-store",
       }
     );
 
     if (res.ok) {
       const results = await res.json();
-      return results
+      const parsed = results
         .filter((r: any) => r.document)
         .map((r: any) => parseFirestoreDocument(r));
+      if (parsed.length > 0) {
+        return parsed;
+      }
     }
   } catch (err) {
-    console.warn("Firestore query timed out or failed:", err);
+    console.warn("Firestore query timed out or failed, trying bornagainroofing.com fallback:", err);
   } finally {
     clearTimeout(timeoutId);
+  }
+
+  // Fallback: pull directly from bornagainroofing.com live pins API
+  try {
+    const fallbackRes = await fetch("https://www.bornagainroofing.com/api/pins", {
+      cache: "no-store",
+    });
+    if (fallbackRes.ok) {
+      const fallbackPins = await fallbackRes.json();
+      if (Array.isArray(fallbackPins)) {
+        return fallbackPins as RawPin[];
+      }
+    }
+  } catch (fallbackErr) {
+    console.warn("Fallback pins fetch failed:", fallbackErr);
   }
 
   return [];
@@ -100,7 +118,7 @@ async function fetchLiveFirestorePins(): Promise<RawPin[]> {
 
 export async function GET() {
   try {
-    // 1. Fetch live daily pins directly from Firebase Firestore REST API
+    // 1. Fetch live daily pins directly from Firebase Firestore REST API (no-store)
     const liveDbPins = await fetchLiveFirestorePins();
 
     // 2. Merge live Firestore pins with the bundled historical archive
@@ -123,16 +141,24 @@ export async function GET() {
     const sanitizedJobs = clusterAndSanitizePins(uniqueRawPins, recentCities, recentServices);
 
     // 5. Persist to storage
-    await storage.saveJobs(sanitizedJobs);
+    await storage.saveJobs(sanitizedJobs, true);
 
-    return NextResponse.json({
-      success: true,
-      livePinsFound: liveDbPins.length,
-      totalRawPins: uniqueRawPins.length,
-      totalClusteredJobs: sanitizedJobs.length,
-      highOpportunityJobsCount: sanitizedJobs.filter((j) => j.opportunityScore >= 70).length,
-      jobs: sanitizedJobs,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        livePinsFound: liveDbPins.length,
+        totalRawPins: uniqueRawPins.length,
+        totalClusteredJobs: sanitizedJobs.length,
+        highOpportunityJobsCount: sanitizedJobs.filter((j) => j.opportunityScore >= 70).length,
+        jobs: sanitizedJobs,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "CDN-Cache-Control": "no-store",
+        },
+      }
+    );
   } catch (error: any) {
     console.error("Sync error:", error);
     return NextResponse.json({ error: error.message || "Sync failed" }, { status: 500 });

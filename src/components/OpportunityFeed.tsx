@@ -14,35 +14,54 @@ interface OpportunityFeedProps {
 export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: OpportunityFeedProps) {
   const [filterType, setFilterType] = useState<"all" | "high_score" | "multi_photo" | "roofing" | "remodeling">("all");
   const [selectedCity, setSelectedCity] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"newest" | "cos_score">("newest");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [viewingJobPhotos, setViewingJobPhotos] = useState<{ job: SanitizedSocialJob; index: number } | null>(null);
 
   // Extract unique cities
   const cities = Array.from(new Set(jobs.map((j) => j.city))).filter(Boolean);
 
-  const filteredJobs = jobs.filter((job) => {
-    // Filter Type
-    if (filterType === "high_score" && job.opportunityScore < 70) return false;
-    if (filterType === "multi_photo" && job.photoCount < 2) return false;
-    if (filterType === "roofing" && !job.service.toLowerCase().includes("roof")) return false;
-    if (filterType === "remodeling" && !job.service.toLowerCase().includes("remodel") && !job.service.toLowerCase().includes("kitchen") && !job.service.toLowerCase().includes("bath")) return false;
+  const getJobSortTimestamp = (job: SanitizedSocialJob): number => {
+    const numId = Number(job.sourcePinId) || 0;
+    if (numId > 1_000_000_000_000) return numId;
+    return (Date.parse(job.date) || 0) + (numId % 1_000_000);
+  };
 
-    // City
-    if (selectedCity !== "all" && job.city !== selectedCity) return false;
+  const filteredJobs = jobs
+    .filter((job) => {
+      // Filter Type
+      if (filterType === "high_score" && job.opportunityScore < 70) return false;
+      if (filterType === "multi_photo" && job.photoCount < 2) return false;
+      if (filterType === "roofing" && !job.service.toLowerCase().includes("roof")) return false;
+      if (filterType === "remodeling" && !job.service.toLowerCase().includes("remodel") && !job.service.toLowerCase().includes("kitchen") && !job.service.toLowerCase().includes("bath")) return false;
 
-    // Search Query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const match =
-        job.city.toLowerCase().includes(query) ||
-        job.service.toLowerCase().includes(query) ||
-        job.description.toLowerCase().includes(query) ||
-        job.authorName.toLowerCase().includes(query);
-      if (!match) return false;
-    }
+      // City
+      if (selectedCity !== "all" && job.city !== selectedCity) return false;
 
-    return true;
-  });
+      // Search Query
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const match =
+          job.city.toLowerCase().includes(query) ||
+          job.service.toLowerCase().includes(query) ||
+          job.description.toLowerCase().includes(query) ||
+          job.authorName.toLowerCase().includes(query);
+        if (!match) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      const timeA = getJobSortTimestamp(a);
+      const timeB = getJobSortTimestamp(b);
+      if (sortBy === "newest") {
+        if (timeB !== timeA) return timeB - timeA;
+        return b.opportunityScore - a.opportunityScore;
+      } else {
+        if (b.opportunityScore !== a.opportunityScore) return b.opportunityScore - a.opportunityScore;
+        return timeB - timeA;
+      }
+    });
 
   return (
     <div style={{ maxWidth: "1400px", margin: "0 auto", padding: "1.5rem" }}>
@@ -119,8 +138,27 @@ export function OpportunityFeed({ jobs, onBuildCampaign, isGeneratingId }: Oppor
           </button>
         </div>
 
-        {/* City Filter */}
-        <div>
+        {/* Sort & City Filters */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as "newest" | "cos_score")}
+            style={{
+              background: "#0b0c10",
+              border: "1px solid rgba(243, 201, 115, 0.28)",
+              color: "#f3c973",
+              fontWeight: 600,
+              padding: "0.6rem 0.95rem",
+              borderRadius: "8px",
+              fontSize: "0.85rem",
+              outline: "none",
+              cursor: "pointer"
+            }}
+          >
+            <option value="newest">🕒 Sort: Newest Pins First</option>
+            <option value="cos_score">🔥 Sort: Highest COS Score</option>
+          </select>
+
           <select
             value={selectedCity}
             onChange={(e) => setSelectedCity(e.target.value)}
